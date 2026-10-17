@@ -60,9 +60,7 @@ def load_data():
     
     df_vagas = df_vagas[cols_vagas]
     df_vagas = df_vagas.dropna(how="all").reset_index(drop=True)
-    
-    # Converte tudo para texto limpando valores nulos/NaN
-    df_vagas = df_vagas.fillna("").astype(str).replace(["nan", "None", "NaN"], "")
+    df_vagas = df_vagas.astype(str).replace(["nan", "None", "NaN"], "")
     
     return df_veic, df_vagas
 
@@ -113,7 +111,26 @@ if df_veic is not None and df_vagas is not None:
                     for idx, row in df_vagas.iterrows()
                 }
                 
-                selecionado = st.selectbox("Pesquise ou selecione um morador:", [""] + list(opcoes_dict.keys()), key="sb_consultar")
+                # Inicializa chave de estado para controle do selectbox
+                if "sb_consultar_key" not in st.session_state:
+                    st.session_state["sb_consultar_key"] = "sb_consultar_0"
+
+                c_sel, c_btn = st.columns([5, 1])
+                
+                with c_btn:
+                    st.write("") # Espaçamento para alinhar com a caixa
+                    st.write("")
+                    if st.button("🗑️ Limpar Busca", key="btn_limpar_busca"):
+                        # Altera a chave para resetar o selectbox
+                        st.session_state["sb_consultar_key"] = f"sb_consultar_{datetime.now().timestamp()}"
+                        st.rerun()
+
+                with c_sel:
+                    selecionado = st.selectbox(
+                        "Pesquise ou selecione um morador:", 
+                        [""] + list(opcoes_dict.keys()), 
+                        key=st.session_state["sb_consultar_key"]
+                    )
                 
                 if selecionado and selecionado in opcoes_dict:
                     idx_sel = opcoes_dict[selecionado]
@@ -138,50 +155,43 @@ if df_veic is not None and df_vagas is not None:
                     
                     c1, c2, c3 = st.columns(3)
                     
-                    # Trata exibições para não exibir 'nan' ou vazio
-                    tag_val = str(m.get('TAG', '')).strip()
-                    tag_val = tag_val if tag_val and tag_val != "nan" else "-"
-                    
-                    data_val = str(m.get('Data', '')).strip()
-                    data_val = data_val if data_val and data_val != "nan" else "-"
-                    
-                    alugada_val = str(m.get('Alugada', '')).strip()
-                    alugada_val = alugada_val if alugada_val and alugada_val != "nan" else "-"
-                    
                     with c1:
                         st.info("**🏠 Unidade / Identificação**")
-                        st.write(f"**Bloco:** {m.get('Bloco', '-') or '-'}")
-                        st.write(f"**Apto:** {m.get('Apto', '-') or '-'}")
-                        st.write(f"**Proprietário / Morador:** {m.get('Proprietario_Morador', '-') or '-'}")
-                        st.write(f"**CPF:** {m.get('CPF', '-') or '-'}")
-                        st.write(f"**Contato:** {m.get('Contato', '-') or '-'}")
-                        st.write(f"**Vínculo:** {m.get('Vinculo', '-') or '-'}")
+                        st.write(f"**Bloco:** {m.get('Bloco', '-')}")
+                        st.write(f"**Apto:** {m.get('Apto', '-')}")
+                        st.write(f"**Proprietário / Morador:** {m.get('Proprietario_Morador', '-')}")
+                        st.write(f"**CPF:** {m.get('CPF', '-')}")
+                        st.write(f"**Contato:** {m.get('Contato', '-')}")
+                        st.write(f"**Vínculo:** {m.get('Vinculo', '-')}")
                         
                     with c2:
                         st.success("**🚘 Dados do Veículo**")
-                        st.write(f"**Modelo:** {m.get('Modelo', '-') or '-'}")
-                        st.write(f"**Marca:** {marca_dinamica or '-'}")
-                        st.write(f"**Placa:** {m.get('Placa', '-') or '-'}")
-                        st.write(f"**Cor:** {m.get('Cor', '-') or '-'}")
+                        st.write(f"**Modelo:** {m.get('Modelo', '-')}")
+                        st.write(f"**Marca:** {marca_dinamica}")
+                        st.write(f"**Placa:** {m.get('Placa', '-')}")
+                        st.write(f"**Cor:** {m.get('Cor', '-')}")
                         st.write(f"**Comprimento:** {comp_dinamico} m")
                         st.markdown("---")
-                        st.write(f"**Setor:** {setor_dinamico or '-'}")
+                        st.write(f"**Setor:** {setor_dinamico}")
                         
                     with c3:
                         st.warning("**🏷️ Vaga & TAG**")
-                        st.write(f"**TAG:** {tag_val}")
-                        st.write(f"**Data:** {data_val}")
-                        st.write(f"**Vaga Alugada?:** {alugada_val}")
-                        
-                        if alugada_val.upper() == "SIM":
-                            st.markdown("---")
-                            st.write(f"**Locatário:** {m.get('De_Quem', '-') or '-'}")
-                            st.write(f"**CPF Locatário:** {m.get('Locatario_CPF', '-') or '-'}")
-                            st.write(f"**Contato Locatário:** {m.get('Locatario_Contato', '-') or '-'}")
+                        tag_val = str(m.get('TAG', '')).strip()
+                        data_val = str(m.get('Data', '')).strip()
+                        alug_val = str(m.get('Alugada', '')).strip()
 
-                        # Trata observação garantindo conversão segura para string
-                        obs_val = str(m.get('Observacao', '') or '').strip()
-                        if obs_val and obs_val.lower() not in ["nan", "none", "-"]:
+                        st.write(f"**TAG:** {tag_val if tag_val and tag_val != 'nan' else '-'}")
+                        st.write(f"**Data:** {data_val if data_val and data_val != 'nan' else '-'}")
+                        st.write(f"**Vaga Alugada?:** {alug_val if alug_val and alug_val != 'nan' else '-'}")
+                        
+                        if alug_val.upper() == "SIM":
+                            st.markdown("---")
+                            st.write(f"**Locador:** {m.get('De_Quem', '-')}")
+                            st.write(f"**CPF Locador:** {m.get('Locatario_CPF', '-')}")
+                            st.write(f"**Contato Locador:** {m.get('Locatario_Contato', '-')}")
+
+                        obs_val = str(m.get('Observacao', '')).strip()
+                        if obs_val and obs_val not in ["-", "nan", "None"]:
                             st.markdown("---")
                             st.write(f"**Observação:** {obs_val}")
             
@@ -218,11 +228,11 @@ if df_veic is not None and df_vagas is not None:
             
             if alugada == "SIM":
                 st.divider()
-                st.markdown("#### 🔑 Informações do Locatário (Quem está alugando a vaga)")
+                st.markdown("#### 🔑 Informações do Locador (Quem está alugando a vaga)")
                 cl1, cl2, cl3 = st.columns(3)
-                locatario_nome = cl1.text_input("Nome do Locatário", key="add_loc_nome")
-                locatario_cpf = cl2.text_input("CPF do Locatário", key="add_loc_cpf")
-                locatario_contato = cl3.text_input("Contato do Locatário", key="add_loc_contato")
+                locatario_nome = cl1.text_input("Nome do Locador", key="add_loc_nome")
+                locatario_cpf = cl2.text_input("CPF do Locador", key="add_loc_cpf")
+                locatario_contato = cl3.text_input("Contato do Locador", key="add_loc_contato")
 
             st.divider()
             observacao = st.text_area("Observação (Informações adicionais do cadastro)", key="add_obs")
@@ -305,11 +315,11 @@ if df_veic is not None and df_vagas is not None:
                     
                     if e_alugada == "SIM":
                         st.divider()
-                        st.markdown("#### 🔑 Informações do Locatário (Quem está alugando a vaga)")
+                        st.markdown("#### 🔑 Informações do Locador (Quem está alugando a vaga)")
                         ce1, ce2, ce3 = st.columns(3)
-                        e_loc_nome = ce1.text_input("Nome do Locatário", value=str(dados_atuais.get("De_Quem", "")), key="ed_loc_nome")
-                        e_loc_cpf = ce2.text_input("CPF do Locatário", value=str(dados_atuais.get("Locatario_CPF", "")), key="ed_loc_cpf")
-                        e_loc_contato = ce3.text_input("Contato do Locatário", value=str(dados_atuais.get("Locatario_Contato", "")), key="ed_loc_contato")
+                        e_loc_nome = ce1.text_input("Nome do Locador", value=str(dados_atuais.get("De_Quem", "")), key="ed_loc_nome")
+                        e_loc_cpf = ce2.text_input("CPF do Locador", value=str(dados_atuais.get("Locatario_CPF", "")), key="ed_loc_cpf")
+                        e_loc_contato = ce3.text_input("Contato do Locador", value=str(dados_atuais.get("Locatario_Contato", "")), key="ed_loc_contato")
 
                     st.divider()
                     e_observacao = st.text_area("Observação (Informações adicionais do cadastro)", value=str(dados_atuais.get("Observacao", "")), key="ed_obs")
@@ -337,189 +347,4 @@ if df_veic is not None and df_vagas is not None:
                         df_vagas.loc[idx_edit, "Comprimento"] = comp_auto
                         df_vagas.loc[idx_edit, "TAG"] = str(e_tag)
                         df_vagas.loc[idx_edit, "Alugada"] = str(e_alugada)
-                        df_vagas.loc[idx_edit, "De_Quem"] = str(e_loc_nome)
-                        df_vagas.loc[idx_edit, "Locatario_CPF"] = str(e_loc_cpf)
-                        df_vagas.loc[idx_edit, "Locatario_Contato"] = str(e_loc_contato)
-                        df_vagas.loc[idx_edit, "Observacao"] = str(e_observacao)
-                        df_vagas.loc[idx_edit, "Local"] = str(local_final)
-                        
-                        save_data(df_veic, df_vagas)
-                        st.success("Cadastro atualizado com sucesso!")
-                        st.rerun()
-
-        # --- SUB-ABA 4: EXCLUIR ---
-        with sub_tab4:
-            st.subheader("🗑️ EXCLUIR CADASTRO")
-            st.warning("⚠️ **ATENÇÃO:** A exclusão é permanente e removerá o morador da base de dados.")
-            
-            if not df_vagas.empty:
-                opcoes_dict_del = {
-                    f"Bloco {row['Bloco']} - Apto {row['Apto']} | {row['Proprietario_Morador']} | Placa: {row['Placa']}": idx
-                    for idx, row in df_vagas.iterrows()
-                }
-                
-                reg_para_excluir = st.selectbox("Selecione o cadastro para EXCLUIR:", [""] + list(opcoes_dict_del.keys()), key="sb_excluir")
-                
-                if reg_para_excluir and reg_para_excluir in opcoes_dict_del:
-                    idx_del = opcoes_dict_del[reg_para_excluir]
-                    m_del = df_vagas.loc[idx_del]
-                    
-                    st.error(f"Você está prestes a excluir: **Bloco {m_del['Bloco']} - Apto {m_del['Apto']} | {m_del['Proprietario_Morador']}**")
-                    
-                    if st.button("🔴 Confirmar Exclusão Permanente", type="primary"):
-                        df_vagas = df_vagas.drop(index=idx_del).reset_index(drop=True)
-                        save_data(df_veic, df_vagas)
-                        st.success("Cadastro excluído com sucesso!")
-                        st.rerun()
-
-    # =========================================================================
-    # ---------------- ABA 2: CADASTRO DE VEÍCULOS ----------------------------
-    # =========================================================================
-    with tab_veic:
-        sub_veic1, sub_veic2, sub_veic3, sub_veic4 = st.tabs(["🔍 CONSULTAR", "➕ NOVO CADASTRO", "✏️ EDITAR", "🗑️ EXCLUIR"])
-
-        # --- SUB-ABA VEÍCULOS 1: CONSULTAR ---
-        with sub_veic1:
-            st.subheader("🔍 CONSULTAR VEÍCULO DA BASE")
-            if not df_veic.empty:
-                dict_veic = {
-                    f"{row[col_mod]} | Marca: {row[col_mar]} | Comprimento: {row[col_com]}m": idx
-                    for idx, row in df_veic.iterrows()
-                }
-                veic_sel = st.selectbox("Pesquise ou selecione um modelo de veículo:", [""] + list(dict_veic.keys()), key="sb_consultar_veic")
-                
-                if veic_sel and veic_sel in dict_veic:
-                    idx_v = dict_veic[veic_sel]
-                    v_row = df_veic.loc[idx_v]
-                    
-                    val_largura = v_row[col_lar] if col_lar in v_row and pd.notna(v_row[col_lar]) else "-"
-                    
-                    st.divider()
-                    st.markdown(f"### 🚘 Modelo: **{v_row[col_mod]}**")
-                    c_v1, c_v2 = st.columns(2)
-                    with c_v1:
-                        st.info("**Ficha do Veículo**")
-                        st.write(f"**Modelo:** {v_row[col_mod]}")
-                        st.write(f"**Marca:** {v_row[col_mar]}")
-                    with c_v2:
-                        st.success("**Especificações Técnicas**")
-                        st.write(f"**Peso Aproximado:** {v_row[col_pes]} kg")
-                        st.write(f"**Largura:** {val_largura} m")
-                        st.write(f"**Comprimento:** {v_row[col_com]} m")
-                        setor_calc_v = calcular_setor_vaga(v_row[col_com], v_row[col_pes])
-                        st.write(f"**Setor:** {setor_calc_v}")
-
-            st.divider()
-            with st.expander("📊 Clique para ver a Tabela Completa de Veículos"):
-                st.dataframe(df_veic, use_container_width=True)
-
-        # --- SUB-ABA VEÍCULOS 2: NOVO CADASTRO ---
-        with sub_veic2:
-            st.subheader("➕ CADASTRAR NOVO MODELO DE VEÍCULO")
-            
-            c1, c2, c3, c4, c5 = st.columns(5)
-            v_modelo = c1.text_input("Modelo (ex: ONIX)", key="nv_mod")
-            v_marca = c2.text_input("Marca (ex: CHEVROLET)", key="nv_mar")
-            v_peso = c3.number_input("Peso (kg)", value=1000, step=50, key="nv_pes")
-            v_larg = c4.number_input("Largura (m)", value=1.70, step=0.01, format="%.2f", key="nv_lar")
-            v_comp = c5.number_input("Comprimento (m)", value=4.00, step=0.01, format="%.2f", key="nv_com")
-            
-            setor_calculado_novo = calcular_setor_vaga(v_comp, v_peso)
-            st.text_input("Setor (Calculado Automático)", value=setor_calculado_novo, disabled=True, key="nv_setor")
-            
-            if st.button("Cadastrar Veículo", type="primary", key="btn_add_veic_auto"):
-                if v_modelo.strip() == "":
-                    st.error("Por favor, informe o Modelo do veículo.")
-                else:
-                    novo_veic = {
-                        col_mod: v_modelo.strip().upper(),
-                        col_mar: v_marca.strip().upper(),
-                        col_pes: v_peso,
-                        col_lar: v_larg,
-                        col_com: v_comp
-                    }
-                    df_veic = pd.concat([df_veic, pd.DataFrame([novo_veic])], ignore_index=True)
-                    save_data(df_veic, df_vagas)
-                    st.success(f"Veículo '{v_modelo.upper()}' cadastrado com sucesso no setor {setor_calculado_novo}!")
-                    st.rerun()
-
-        # --- SUB-ABA VEÍCULOS 3: EDITAR ---
-        with sub_veic3:
-            st.subheader("✏️ EDITAR MODELO DE VEÍCULO")
-            if not df_veic.empty:
-                dict_veic_edit = {
-                    f"Linha {idx} | {row[col_mod]} ({row[col_mar]})": idx
-                    for idx, row in df_veic.iterrows()
-                }
-                veic_edit_sel = st.selectbox("Selecione o veículo para EDITAR:", [""] + list(dict_veic_edit.keys()), key="sb_edit_veic")
-                
-                if veic_edit_sel and veic_edit_sel in dict_veic_edit:
-                    idx_ve_edit = dict_veic_edit[veic_edit_sel]
-                    v_edit = df_veic.loc[idx_ve_edit]
-                    
-                    ce1, ce2, ce3, ce4, ce5 = st.columns(5)
-                    e_v_mod = ce1.text_input("Modelo", value=str(v_edit[col_mod]), key="ev_mod")
-                    e_v_mar = ce2.text_input("Marca", value=str(v_edit[col_mar]), key="ev_mar")
-                    
-                    val_peso = float(v_edit[col_pes]) if pd.notna(v_edit[col_pes]) else 1000.0
-                    val_larg = float(v_edit[col_lar]) if col_lar in v_edit and pd.notna(v_edit[col_lar]) else 1.70
-                    val_comp = float(v_edit[col_com]) if pd.notna(v_edit[col_com]) else 4.00
-                    
-                    e_v_peso = ce3.number_input("Peso (kg)", value=val_peso, step=50.0, key="ev_pes")
-                    e_v_larg = ce4.number_input("Largura (m)", value=val_larg, step=0.01, format="%.2f", key="ev_lar")
-                    e_v_comp = ce5.number_input("Comprimento (m)", value=val_comp, step=0.01, format="%.2f", key="ev_com")
-                    
-                    setor_calculado_edit = calcular_setor_vaga(e_v_comp, e_v_peso)
-                    st.text_input("Setor (Calculado Automático)", value=setor_calculado_edit, disabled=True, key="ev_setor")
-                    
-                    if st.button("Atualizar Veículo e Sincronizar Moradores", type="primary", key="btn_upd_veic_auto"):
-                        novo_mod = e_v_mod.strip().upper()
-                        novo_mar = e_v_mar.strip().upper()
-                        novo_comp = e_v_comp
-                        novo_peso = e_v_peso
-                        novo_larg = e_v_larg
-                        novo_setor = setor_calculado_edit
-                        
-                        mod_antigo = str(v_edit[col_mod]).strip().upper()
-                        
-                        df_veic.loc[idx_ve_edit, col_mod] = novo_mod
-                        df_veic.loc[idx_ve_edit, col_mar] = novo_mar
-                        df_veic.loc[idx_ve_edit, col_pes] = novo_peso
-                        df_veic.loc[idx_ve_edit, col_lar] = novo_larg
-                        df_veic.loc[idx_ve_edit, col_com] = novo_comp
-                        
-                        mask_m = df_vagas["Modelo"].astype(str).str.strip().str.upper() == mod_antigo
-                        if mask_m.any():
-                            df_vagas.loc[mask_m, "Modelo"] = novo_mod
-                            df_vagas.loc[mask_m, "Marca"] = novo_mar
-                            df_vagas.loc[mask_m, "Comprimento"] = str(novo_comp)
-                            df_vagas.loc[mask_m, "Local"] = novo_setor
-                        
-                        save_data(df_veic, df_vagas)
-                        st.success("Dados do veículo e moradores vinculados atualizados com sucesso!")
-                        st.rerun()
-
-        # --- SUB-ABA VEÍCULOS 4: EXCLUIR ---
-        with sub_veic4:
-            st.subheader("🗑️ EXCLUIR MODELO DE VEÍCULO")
-            st.warning("⚠️ **ATENÇÃO:** A exclusão removerá o modelo da base de consulta de veículos.")
-            
-            if not df_veic.empty:
-                dict_veic_del = {
-                    f"Linha {idx} | {row[col_mod]} | Marca: {row[col_mar]}": idx
-                    for idx, row in df_veic.iterrows()
-                }
-                veic_del_sel = st.selectbox("Selecione o veículo para EXCLUIR:", [""] + list(dict_veic_del.keys()), key="sb_del_veic")
-                
-                if veic_del_sel and veic_del_sel in dict_veic_del:
-                    idx_ve_del = dict_veic_del[veic_del_sel]
-                    v_del = df_veic.loc[idx_ve_del]
-                    
-                    st.divider()
-                    st.error(f"Você está prestes a excluir o modelo: **{v_del[col_mod]} ({v_del[col_mar]})**")
-                    
-                    if st.button("🔴 Confirmar Exclusão de Veículo", type="primary"):
-                        df_veic = df_veic.drop(index=idx_ve_del).reset_index(drop=True)
-                        save_data(df_veic, df_vagas)
-                        st.success("Modelo de veículo excluído com sucesso!")
-                        st.rerun()
+                        df
